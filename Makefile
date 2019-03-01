@@ -3,7 +3,7 @@
 #
 # Author: Philip Howard
 #
-CC = gcc
+CC = mpiCC
 CFLAGS = -g -O4 -Wall -pthread -std=c11
 CPPFLAGS = -g -O4 -Wall -std=c++11
 LFLAGS = -pthread
