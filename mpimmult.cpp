@@ -171,15 +171,19 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     //     void *recvbuf, int recvcnt,
     //     MPI_Datatype recvtype,
     //     int root, MPI_Comm comm);
-    MPI_Scatter(a, (a_rows * a_cols) / world_size,
+    MPI_Scatter(a, a_cols,
                 MPI_DOUBLE,
-                aa, (a_rows * a_cols) / world_size,
+                aa, a_cols,
                 MPI_DOUBLE,
                 0, MPI_COMM_WORLD);
+    if (g_print_level > 2)
+        printf("scatter worked\n");
     // broadcast b
     MPI_Bcast(b, (a_rows * a_cols),
               MPI_DOUBLE,
               0, MPI_COMM_WORLD);
+    if (g_print_level > 2)
+        printf("broadcast worked\n");
     // do the stuff
     double temp_value;
     double *a_value, *b_value, *c_value;
@@ -197,21 +201,33 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
             for (int acol = 0; acol < a_cols; acol++)
             {
                 temp_value += *a_value * (*b_value);
-                //printf("%d %d %d %f %f %f\n", arow, bcol, acol,
-                //        temp_value, *a_value, *b_value);
-                a_value++;
+                if (g_print_level > 2)
+                    printf("%d %d %d %f %f %f\n", arow, bcol, acol,
+                           temp_value, *a_value, *b_value);
+                a_value++; // goes to hell here **********************************
+                if (g_print_level > 2)
+                    printf("\tjust did a_value\n");
                 b_value += b_cols;
+                if (g_print_level > 2)
+                    printf("just did b_value\n");
             }
-
+            if (g_print_level > 2)
+                printf("\tout of inner loop\n");
             *c_value = temp_value;
             c_value++;
+            if (g_print_level > 2)
+                printf("\tout of middle loop\n");
         }
     }
+    if (g_print_level > 2)
+        printf("mathing worked\n");
     // gather into c
-    MPI_Gather(c, (a_rows * a_cols) / world_size,
+    MPI_Gather(c, a_cols,
                MPI_DOUBLE,
-               cc, (a_rows * a_cols) / world_size,
+               cc, a_cols,
                MPI_DOUBLE,
                0, MPI_COMM_WORLD);
+    if (g_print_level > 2)
+        printf("gather worked\n");
     MPI_Finalize();
 }
