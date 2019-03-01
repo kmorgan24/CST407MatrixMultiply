@@ -64,6 +64,11 @@ static void proc_args(int argc, char **argv)
 void Matrix_Print(FILE *output, double *mat, int rows, int cols,
                   const char *format)
 {
+    if (g_print_level > 1)
+    {
+        printf("in print\n");
+    }
+
     double *value = mat;
 
     for (int ii = 0; ii < rows; ii++)
@@ -176,13 +181,13 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
                 aa, a_cols,
                 MPI_DOUBLE,
                 0, MPI_COMM_WORLD);
-    if (g_print_level > 2)
+    if (g_print_level > 1)
         printf("scatter worked\n");
     // broadcast b
     MPI_Bcast(b, (a_rows * a_cols),
               MPI_DOUBLE,
               0, MPI_COMM_WORLD);
-    if (g_print_level > 2)
+    if (g_print_level > 1)
         printf("broadcast worked\n");
     // do the stuff
     double temp_value;
@@ -201,14 +206,14 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
             for (int acol = 0; acol < a_cols; acol++)
             {
                 temp_value += *a_value * (*b_value);
-                if (g_print_level > 2)
+                if (g_print_level > 3)
                     printf("%d %d %d %f %f %f\n", arow, bcol, acol,
                            temp_value, *a_value, *b_value);
                 a_value++; // goes to hell here **********************************
-                if (g_print_level > 2)
+                if (g_print_level > 3)
                     printf("\tjust did a_value\n");
                 b_value += b_cols;
-                if (g_print_level > 2)
+                if (g_print_level > 3)
                     printf("just did b_value\n");
             }
             if (g_print_level > 2)
@@ -219,7 +224,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
                 printf("\tout of middle loop\n");
         }
     }
-    if (g_print_level > 2)
+    if (g_print_level > 1)
         printf("mathing worked\n");
     // gather into c
     MPI_Gather(c, a_cols,
@@ -227,7 +232,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
                cc, a_cols,
                MPI_DOUBLE,
                0, MPI_COMM_WORLD);
-    if (g_print_level > 2)
+    if (g_print_level > 1)
         printf("gather worked\n");
     MPI_Finalize();
 }
