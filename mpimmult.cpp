@@ -84,64 +84,74 @@ void Matrix_Print(FILE *output, double *mat, int rows, int cols,
 
 int main(int argc, char **argv)
 {
-    int a_cols, a_rows;
-    int b_cols, b_rows;
-    int c_cols, c_rows;
+    // Initialize the MPI environment
+    MPI_Init(NULL, NULL);
 
-    proc_args(argc, argv);
+    // Get the number of processes
+    int world_size;
 
-    a_cols = g_a_cols;
-    a_rows = g_a_rows;
-    b_cols = g_b_cols;
-
-    b_rows = a_cols;
-    c_rows = a_rows;
-    c_cols = b_cols;
-
-    if (g_alg == 3)
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &g_rank);
+    if (g_rank == 0)
     {
-        c_cols = a_rows;
-        c_rows = a_cols;
-    }
+        int a_cols, a_rows;
+        int b_cols, b_rows;
+        int c_cols, c_rows;
 
-    typedef double a_type[a_cols];
-    typedef double b_type[b_cols];
-    typedef double c_type[c_cols];
-    a_type *a;
-    b_type *b;
-    c_type *c;
+        proc_args(argc, argv);
 
-    a = (a_type *)malloc(a_rows * sizeof(a_type));
-    b = (b_type *)malloc(b_rows * sizeof(b_type));
-    c = (c_type *)malloc(c_rows * sizeof(c_type));
+        a_cols = g_a_cols;
+        a_rows = g_a_rows;
+        b_cols = g_b_cols;
 
-    double value = 0;
-    for (int ii = 0; ii < a_rows; ii++)
-    {
-        for (int jj = 0; jj < a_cols; jj++)
+        b_rows = a_cols;
+        c_rows = a_rows;
+        c_cols = b_cols;
+
+        if (g_alg == 3)
         {
-            a[ii][jj] = value++;
+            c_cols = a_rows;
+            c_rows = a_cols;
         }
-    }
 
-    for (int ii = 0; ii < b_rows; ii++)
-    {
-        for (int jj = 0; jj < b_cols; jj++)
+        typedef double a_type[a_cols];
+        typedef double b_type[b_cols];
+        typedef double c_type[c_cols];
+        a_type *a;
+        b_type *b;
+        c_type *c;
+
+        a = (a_type *)malloc(a_rows * sizeof(a_type));
+        b = (b_type *)malloc(b_rows * sizeof(b_type));
+        c = (c_type *)malloc(c_rows * sizeof(c_type));
+
+        double value = 0;
+        for (int ii = 0; ii < a_rows; ii++)
         {
-            b[ii][jj] = value++;
+            for (int jj = 0; jj < a_cols; jj++)
+            {
+                a[ii][jj] = value++;
+            }
         }
+
+        for (int ii = 0; ii < b_rows; ii++)
+        {
+            for (int jj = 0; jj < b_cols; jj++)
+            {
+                b[ii][jj] = value++;
+            }
+        }
+
+        if (g_print_level > 1)
+            Matrix_Print(stdout, &a[0][0], a_rows, a_cols, "%7.2f ");
+        if (g_print_level > 1)
+            printf("\n");
+
+        if (g_print_level > 1)
+            Matrix_Print(stdout, &b[0][0], b_rows, b_cols, "%7.2f ");
+        if (g_print_level > 1)
+            printf("\n");
     }
-
-    if (g_print_level > 1)
-        Matrix_Print(stdout, &a[0][0], a_rows, a_cols, "%7.2f ");
-    if (g_print_level > 1)
-        printf("\n");
-
-    if (g_print_level > 1)
-        Matrix_Print(stdout, &b[0][0], b_rows, b_cols, "%7.2f ");
-    if (g_print_level > 1)
-        printf("\n");
-
     // do the stuff here
 
     switch (g_alg)
@@ -161,24 +171,18 @@ int main(int argc, char **argv)
 
 void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
 {
-    // Initialize the MPI environment
-    MPI_Init(NULL, NULL);
-
-    // Get the number of processes
-    int world_size;
-    double aa[a_cols], cc[b_cols];
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &g_rank);
-
+    double *aa, cc;
+    aa = (double *)malloc(a_cols * b_cols * sizeof(double));
+    cc = (double *)malloc(a_cols * b_cols * sizeof(double));
     // scatter a
     // int MPI_Scatter(void *sendbuf, int sendcount,
     //     MPI_Datatype sendtype,
     //     void *recvbuf, int recvcnt,
     //     MPI_Datatype recvtype,
     //     int root, MPI_Comm comm);
-    MPI_Scatter(a, a_cols,
+    MPI_Scatter(a, a_cols * b_cols,
                 MPI_DOUBLE,
-                aa, a_cols,
+                aa, sizeof(aa) / sizeof(double),
                 MPI_DOUBLE,
                 0, MPI_COMM_WORLD);
     if (g_print_level > 1)
@@ -193,13 +197,13 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     double temp_value;
     double *a_value, *b_value, *c_value;
 
-    c_value = c;
+    c_value = cc;
 
     for (int arow = 0; arow < a_rows; arow++)
     {
         for (int bcol = 0; bcol < b_cols; bcol++)
         {
-            a_value = a + arow * a_cols;
+            a_value = aa + arow * a_cols;
             b_value = b + bcol;
             temp_value = 0;
 
@@ -209,7 +213,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
                 if (g_print_level > 3)
                     printf("%d %d %d %f %f %f\n", arow, bcol, acol,
                            temp_value, *a_value, *b_value);
-                a_value++; // goes to hell here **********************************
+                a_value++;
                 if (g_print_level > 3)
                     printf("\tjust did a_value\n");
                 b_value += b_cols;
@@ -227,12 +231,15 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     if (g_print_level > 1)
         printf("mathing worked\n");
     // gather into c
-    MPI_Gather(c, a_cols,
+    MPI_Gather(c, a_cols * c_cols,
                MPI_DOUBLE,
-               cc, a_cols,
+               cc, sizeof(cc) / sizeof(double),
                MPI_DOUBLE,
                0, MPI_COMM_WORLD);
     if (g_print_level > 1)
         printf("gather worked\n");
+
+    free(aa);
+    free(cc);
     MPI_Finalize();
 }
