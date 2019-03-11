@@ -142,14 +142,14 @@ int main(int argc, char **argv)
             }
         }
 
-        if (g_print_level > 1)
+        if (g_print_level > 1 && g_rank == 0)
             Matrix_Print(stdout, &a[0][0], a_rows, a_cols, "%7.2f ");
-        if (g_print_level > 1)
+        if (g_print_level > 1 && g_rank == 0)
             printf("\n");
 
-        if (g_print_level > 1)
+        if (g_print_level > 1 && g_rank == 0)
             Matrix_Print(stdout, &b[0][0], b_rows, b_cols, "%7.2f ");
-        if (g_print_level > 1)
+        if (g_print_level > 1 && g_rank == 0)
             printf("\n");
     }
     // do the stuff here
@@ -157,7 +157,8 @@ int main(int argc, char **argv)
     switch (g_alg)
     {
     default:
-        printf("Mpi Multiply\n");
+        if (g_rank == 0)
+            printf("Mpi Multiply\n");
         MMult(&a[0][0], &b[0][0], &c[0][0], a_cols, a_rows, b_cols);
         break;
     }
