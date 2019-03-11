@@ -24,6 +24,8 @@ static int g_n_threads = 0;
 static int g_print_level = 0;
 static int g_alg = 0;
 static int g_rank = 0;
+// Get the number of processes
+static int world_size = 0;
 
 static void proc_args(int argc, char **argv)
 {
@@ -86,10 +88,6 @@ int main(int argc, char **argv)
 {
     // Initialize the MPI environment
     MPI_Init(NULL, NULL);
-
-    // Get the number of processes
-    int world_size;
-
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_rank);
     if (g_rank == 0)
@@ -186,13 +184,13 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
                 aa, sizeof(aa) / sizeof(double),
                 MPI_DOUBLE,
                 0, MPI_COMM_WORLD);
-    if (g_print_level > 1)
+    if (g_print_level > 1 && g_rank == 0)
         printf("scatter worked\n");
     // broadcast b
     MPI_Bcast(b, (a_rows * a_cols),
               MPI_DOUBLE,
               0, MPI_COMM_WORLD);
-    if (g_print_level > 1)
+    if (g_print_level > 1 && g_rank == 0)
         printf("broadcast worked\n");
     // do the stuff
     double temp_value;
@@ -200,7 +198,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
 
     c_value = cc;
 
-    for (int arow = 0; arow < (sizeof(aa) / sizeof(double)) / a_rows; arow++)
+    for (int arow = 0; arow < (sizeof(aa) / sizeof(double)) / world_size; arow++)
     {
         for (int bcol = 0; bcol < b_cols; bcol++)
         {
@@ -211,25 +209,25 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
             for (int acol = 0; acol < a_cols; acol++)
             {
                 temp_value += *a_value * (*b_value);
-                if (g_print_level > 3)
+                if (g_print_level > 3 && g_rank == 0)
                     printf("%d %d %d %f %f %f\n", arow, bcol, acol,
                            temp_value, *a_value, *b_value);
                 a_value++;
-                if (g_print_level > 3)
+                if (g_print_level > 3 && g_rank == 0)
                     printf("\tjust did a_value\n");
                 b_value += b_cols;
-                if (g_print_level > 3)
+                if (g_print_level > 3 && g_rank == 0)
                     printf("just did b_value\n");
             }
-            if (g_print_level > 2)
+            if (g_print_level > 2 && g_rank == 0)
                 printf("\tout of inner loop\n");
             *c_value = temp_value;
             c_value++;
-            if (g_print_level > 2)
+            if (g_print_level > 2 && g_rank == 0)
                 printf("\tout of middle loop\n");
         }
     }
-    if (g_print_level > 1)
+    if (g_print_level > 1 && g_rank == 0)
         printf("mathing worked\n");
     // gather into c
     MPI_Gather(c, a_cols * c_cols,
@@ -237,7 +235,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
                cc, sizeof(cc) / sizeof(double),
                MPI_DOUBLE,
                0, MPI_COMM_WORLD);
-    if (g_print_level > 1)
+    if (g_print_level > 1 && g_rank == 0)
         printf("gather worked\n");
 
     free(aa);
