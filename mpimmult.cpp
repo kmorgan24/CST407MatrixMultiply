@@ -187,7 +187,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     if (g_print_level > 1 && g_rank == 0)
         printf("scatter worked\n");
     // broadcast b
-    MPI_Bcast(b, (a_rows * a_cols),
+    MPI_Bcast(b, (a_rows * a_cols) / world_size,
               MPI_DOUBLE,
               0, MPI_COMM_WORLD);
     if (g_print_level > 1 && g_rank == 0)
@@ -230,7 +230,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     if (g_print_level > 1 && g_rank == 0)
         printf("mathing worked\n");
     // gather into c
-    MPI_Gather(c, a_cols * c_cols,
+    MPI_Gather(c, a_cols * c_cols / world_size,
                MPI_DOUBLE,
                cc, sizeof(cc) / sizeof(double),
                MPI_DOUBLE,
