@@ -199,7 +199,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
 
     c_value = cc;
 
-    for (int arow = 0; arow < a_rows; arow++)
+    for (int arow = 0; arow < (sizeof(aa) / sizeof(double)) / a_rows; arow++)
     {
         for (int bcol = 0; bcol < b_cols; bcol++)
         {
