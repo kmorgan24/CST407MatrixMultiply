@@ -149,28 +149,29 @@ int main(int argc, char **argv)
             Matrix_Print(stdout, &b[0][0], b_rows, b_cols, "%7.2f ");
         if (g_print_level > 1 && g_rank == 0)
             printf("\n");
-    }
-    // do the stuff here
 
-    switch (g_alg)
-    {
-    default:
-        if (g_rank == 0)
-            printf("Mpi Multiply\n");
-        MMult(&a[0][0], &b[0][0], &c[0][0], a_cols, a_rows, b_cols);
-        break;
-    }
-    if (g_print_level > 0)
-        if (g_rank == 0)
+        // do the stuff here
+
+        switch (g_alg)
         {
-            Matrix_Print(stdout, &c[0][0], c_rows, c_cols, "%7.2f ");
+        default:
+            if (g_rank == 0)
+                printf("Mpi Multiply\n");
+            MMult(&a[0][0], &b[0][0], &c[0][0], a_cols, a_rows, b_cols);
+            break;
         }
+        if (g_print_level > 0)
+            if (g_rank == 0)
+            {
+                Matrix_Print(stdout, &c[0][0], c_rows, c_cols, "%7.2f ");
+            }
+    }
     return 0;
 }
 
 void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
 {
-    double *aa, cc;
+    double *aa, *cc;
     aa = (double *)malloc(a_cols * b_cols * sizeof(double));
     cc = (double *)malloc(a_cols * b_cols * sizeof(double));
     // scatter a
@@ -230,7 +231,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     if (g_print_level > 1 && g_rank == 0)
         printf("mathing worked\n");
     // gather into c
-    MPI_Gather(c, a_cols * c_cols,
+    MPI_Gather(c, a_cols * b_cols,
                MPI_DOUBLE,
                cc, sizeof(cc) / sizeof(double),
                MPI_DOUBLE,
