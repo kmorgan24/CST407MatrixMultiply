@@ -151,8 +151,6 @@ int main(int argc, char **argv)
         printf("\n");
 
     // do the stuff here
-
-    //MMult(&a[0][0], &b[0][0], &c[0][0], a_cols, a_rows, b_cols);
     double *aa, *cc;
     aa = (double *)malloc(a_cols * b_cols * sizeof(double));
     cc = (double *)malloc(a_cols * b_cols * sizeof(double));
@@ -231,8 +229,4 @@ int main(int argc, char **argv)
     free(cc);
     MPI_Finalize();
     return 0;
-}
-
-void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
-{
 }
