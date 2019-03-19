@@ -166,6 +166,7 @@ int main(int argc, char **argv)
                 Matrix_Print(stdout, &c[0][0], c_rows, c_cols, "%7.2f ");
             }
     }
+    MPI_Finalize();
     return 0;
 }
 
@@ -182,7 +183,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     //     int root, MPI_Comm comm);
     MPI_Scatter(a, a_cols * b_cols / world_size,
                 MPI_DOUBLE,
-                aa, sizeof(aa) / sizeof(double),
+                aa, a_cols * b_cols / world_size,
                 MPI_DOUBLE,
                 0, MPI_COMM_WORLD);
     if (g_print_level > 1 && g_rank == 0)
@@ -199,7 +200,7 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
 
     c_value = cc;
 
-    for (int arow = 0; arow < (sizeof(aa) / sizeof(double)) / world_size; arow++)
+    for (int arow = 0; arow < a_rows; arow++)
     {
         for (int bcol = 0; bcol < b_cols; bcol++)
         {
@@ -231,9 +232,9 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
     if (g_print_level > 1 && g_rank == 0)
         printf("mathing worked\n");
     // gather into c
-    MPI_Gather(c, a_cols * b_cols,
+    MPI_Gather(cc, a_cols * b_cols,
                MPI_DOUBLE,
-               cc, sizeof(cc) / sizeof(double),
+               c, a_cols * b_cols,
                MPI_DOUBLE,
                0, MPI_COMM_WORLD);
     if (g_print_level > 1 && g_rank == 0)
@@ -241,5 +242,4 @@ void MMult(double *a, double *b, double *c, int a_cols, int a_rows, int b_cols)
 
     free(aa);
     free(cc);
-    MPI_Finalize();
 }
